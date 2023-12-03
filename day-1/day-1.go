@@ -1,21 +1,16 @@
 package main
 
 import (
+	"aoc-2023/errorHandling"
 	"fmt"
 	"os"
 	"strings"
 	"unicode"
 )
 
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
-
 func readLines(fileName string) []string {
 	rawData, err := os.ReadFile(fileName)
-	check(err)
+	errorHandling.Check(err)
 
 	data := string(rawData)
 
