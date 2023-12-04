@@ -59,7 +59,7 @@ func parseInput(fileName string) []ScratchCard {
 	return scratchCards
 }
 
-func determinePoints(card ScratchCard) int {
+func determineNumMatches(card ScratchCard) int {
 	numMatches := 0
 	for _, winning := range card.winning {
 		for _, have := range card.have {
@@ -71,11 +71,21 @@ func determinePoints(card ScratchCard) int {
 		}
 	}
 
+	return numMatches
+}
+
+func convertMatchesToPoints(numMatches int) int {
 	if numMatches > 0 {
 		return 1 << (numMatches - 1)
 	}
 
 	return 0
+}
+
+func determinePoints(card ScratchCard) int {
+	numMatches := determineNumMatches(card)
+
+	return convertMatchesToPoints(numMatches)
 }
 
 func easy() {
@@ -90,7 +100,35 @@ func easy() {
 	fmt.Printf("The points total is %d\n", totalPoints)
 }
 
+func hard() {
+	scratchCards := parseInput("input.txt")
+
+	numCards := make([]int, len(scratchCards))
+	matches := make([]int, len(scratchCards))
+
+	for i, card := range scratchCards {
+		numCards[i] += 1
+		numMatches := determineNumMatches(card)
+		matches[i] = numMatches
+
+		for j := 1; j <= numMatches; j++ {
+			numCards[i+j] += numCards[i]
+		}
+	}
+
+	totalCards := 0
+
+	for _, c := range numCards {
+		totalCards += c
+	}
+
+	fmt.Printf("The total number of scratch cards is %d\n", totalCards)
+}
+
 func main() {
 	fmt.Println("Part one")
 	easy()
+
+	fmt.Println("Part two")
+	hard()
 }
