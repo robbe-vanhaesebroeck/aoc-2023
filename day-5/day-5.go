@@ -103,6 +103,51 @@ func convertNumber(seed int, convertMap *ConvertMap) int {
 	return seed
 }
 
+func convertTuples(seedTuples [][]int, convertMap *ConvertMap) [][]int {
+	convertedTuples := make([][]int, 0)
+
+	for _, tuple := range seedTuples {
+		tuples := make([][]int, 0)
+
+		start, length := tuple[0], tuple[1]
+		end := start + length
+
+		for _, r := range convertMap.ranges {
+			if start >= r.sourceStart && end <= r.sourceStart+r.length {
+				// Range falls completely in mapped range
+				newStart := r.destinationStart + start - r.sourceStart
+
+				tuples = append(tuples, []int{newStart, length})
+				break
+			} else if start >= r.sourceStart && start < r.sourceStart+r.length {
+				// Range starts after the mapped start but ends after the range ends
+				newStart := r.destinationStart + start - r.sourceStart
+				newLength := r.sourceStart + r.length - start
+
+				tuples = append(tuples, []int{newStart, newLength})
+				tuples = append(tuples, convertTuples([][]int{{r.sourceStart + r.length, length - newLength}}, convertMap)...)
+				break
+			} else if end >= r.sourceStart && end < r.sourceStart+length {
+				// Range starts before start but ends within the range end
+				newStart := r.destinationStart
+				newLength := end - r.sourceStart
+
+				tuples = append(tuples, []int{newStart, newLength})
+				tuples = append(tuples, convertTuples([][]int{{r.sourceStart, length - newLength}}, convertMap)...)
+			}
+		}
+
+		if len(tuples) == 0 {
+			convertedTuples = append(convertedTuples, tuple)
+		} else {
+			convertedTuples = append(convertedTuples, tuples...)
+		}
+
+	}
+
+	return convertedTuples
+}
+
 func getLocationNumbers(seeds Seeds, conversionMaps map[string]*ConvertMap) []int {
 	locationNumbers := make([]int, len(seeds))
 
@@ -121,6 +166,23 @@ func getLocationNumbers(seeds Seeds, conversionMaps map[string]*ConvertMap) []in
 	return locationNumbers
 }
 
+func mapTuples(seedTuples []int, convertMaps map[string]*ConvertMap) []int {
+	locationNumbers := make([]int, len(seedTuples)/2)
+	for i := 0; i < len(seedTuples); i += 2 {
+		currentMap, hasMap := convertMaps["seed"]
+		convertedTuples := [][]int{seedTuples[i : i+2]}
+
+		for hasMap {
+			convertedTuples = convertTuples(convertedTuples, currentMap)
+			currentMap, hasMap = convertMaps[currentMap.destination]
+		}
+
+		locationNumbers[i/2] = slices.MinFunc(convertedTuples, func(t1, t2 []int) int { return t1[0] - t2[0] })[0]
+	}
+
+	return locationNumbers
+}
+
 func easy() {
 	seeds, conversionMaps := parseInput("input.txt")
 
@@ -131,7 +193,20 @@ func easy() {
 	fmt.Printf("The minimal location is %d\n", minLocation)
 }
 
+func hard() {
+	seedTuples, convertMaps := parseInput("input.txt")
+
+	locationNumbers := mapTuples(seedTuples, convertMaps)
+
+	minLocation := slices.Min(locationNumbers)
+
+	fmt.Printf("The minimal location is %d\n", minLocation)
+}
+
 func main() {
 	fmt.Println("Part one")
 	easy()
+
+	fmt.Println("Part two")
+	hard()
 }
