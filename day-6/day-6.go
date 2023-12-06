@@ -86,7 +86,32 @@ func clamp(n, min, max float64) float64 {
 	return n
 }
 
+func determineValue(t, time, distance float64) float64 {
+	return t*t - time*t + distance
+}
+
 func getWins(time, distance float64) int {
+	// We know that time (t) has an acceleration and a travel part
+	// t = t_a + t_v
+	// The time spent accelerating (t_a) is equal to the velocity
+	// v = t_a
+	// We also know that the distance (d) travelled is
+	// d = v * t_v
+	//	 = t_a * t_v
+	//   = t_a * (t - t_a)
+	// <=>
+	// t_a^2 - t * t_a + d = 0
+	// Our distance d should be greater than D (the current record)
+	// So, this means for a total time T
+	// v * t_v > D
+	// <=>
+	// t_a * (T - t_a) > D
+	// <=>
+	// t_a^2 - T * t_a + D < 0
+	// We then solve for t_a under the constraints that
+	// - t_a >= 0
+	// - t_a <= T
+
 	// t needs to be positive
 	disc := time*time - 4*distance
 
@@ -106,11 +131,11 @@ func getWins(time, distance float64) int {
 	numWins := int(solutionMax - solutionMin + 1)
 
 	// Check that the boundaries are actually solutions
-	if solutionMax*solutionMax-time*solutionMax+distance >= 0 {
+	if determineValue(solutionMax, time, distance) >= 0 {
 		numWins--
 	}
 
-	if solutionMin*solutionMin-time*solutionMin+distance >= 0 {
+	if determineValue(solutionMin, time, distance) >= 0 {
 		numWins--
 	}
 
