@@ -8,6 +8,7 @@ import (
 	"math"
 	"os"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -15,7 +16,7 @@ type Race struct {
 	time, distance int
 }
 
-func parseInput(fileName string) []Race {
+func parseInput(fileName string) (string, string) {
 	f, err := os.Open(fileName)
 
 	errorHandling.Check(err)
@@ -23,29 +24,34 @@ func parseInput(fileName string) []Race {
 
 	scanner := bufio.NewScanner(f)
 
-	var times, distances []int
+	var timesStr, distancesStr string
 
 	if scanner.Scan() {
 		timeLine := scanner.Text()
-		timesStr := strings.Split(timeLine, ":")[1]
+		timesStr = strings.Split(timeLine, ":")[1]
 
-		splitTimeStr := strings.Fields(timesStr)
-
-		times = common.StringListToInt(splitTimeStr)
 	} else {
 		panic("Could not read time")
 	}
 
 	if scanner.Scan() {
 		distanceLine := scanner.Text()
-		distancesStr := strings.Split(distanceLine, ":")[1]
-
-		splitDistancesStr := strings.Fields(distancesStr)
-
-		distances = common.StringListToInt(splitDistancesStr)
+		distancesStr = strings.Split(distanceLine, ":")[1]
 	} else {
-		panic("Could not read time")
+		panic("Could not read distance")
 	}
+
+	return timesStr, distancesStr
+}
+
+func parseInputEasy(fileName string) []Race {
+	timesStr, distancesStr := parseInput(fileName)
+
+	splitTimeStr := strings.Fields(timesStr)
+	times := common.StringListToInt(splitTimeStr)
+
+	splitDistancesStr := strings.Fields(distancesStr)
+	distances := common.StringListToInt(splitDistancesStr)
 
 	races := make([]Race, len(times))
 
@@ -54,6 +60,18 @@ func parseInput(fileName string) []Race {
 	}
 
 	return races
+}
+
+func parseInputHard(fileName string) Race {
+	timesStr, distancesStr := parseInput(fileName)
+
+	time, err := strconv.Atoi(strings.Join(strings.Split(timesStr, " "), ""))
+	errorHandling.Check(err)
+
+	distance, err := strconv.Atoi(strings.Join(strings.Split(distancesStr, " "), ""))
+	errorHandling.Check(err)
+
+	return Race{time, distance}
 }
 
 func clamp(n, min, max float64) float64 {
@@ -85,18 +103,22 @@ func getWins(time, distance float64) int {
 	solutionMin := math.Floor(solutions[0])
 	solutionMax := math.Ceil(solutions[1])
 
-	numWins := 0
-	for i := solutionMin; i <= solutionMax; i++ {
-		if i*i-time*i+distance < 0 {
-			numWins++
-		}
+	numWins := int(solutionMax - solutionMin + 1)
+
+	// Check that the boundaries are actually solutions
+	if solutionMax*solutionMax-time*solutionMax+distance >= 0 {
+		numWins--
+	}
+
+	if solutionMin*solutionMin-time*solutionMin+distance >= 0 {
+		numWins--
 	}
 
 	return numWins
 }
 
 func easy() {
-	races := parseInput("input.txt")
+	races := parseInputEasy("input.txt")
 
 	numWins := make([]int, len(races))
 	for i, r := range races {
@@ -111,7 +133,18 @@ func easy() {
 	fmt.Printf("The final number is %d\n", finalRes)
 }
 
+func hard() {
+	race := parseInputHard("input.txt")
+
+	numWins := getWins(float64(race.time), float64(race.distance))
+
+	fmt.Printf("The final number is %d\n", numWins)
+}
+
 func main() {
 	fmt.Println("Part one")
 	easy()
+
+	fmt.Println("Part two")
+	hard()
 }
