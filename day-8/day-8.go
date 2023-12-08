@@ -44,46 +44,51 @@ func getInstructionIndex(instruction byte) int {
 	return strings.IndexByte(instructionSet, instruction)
 }
 
-func getPeriods(instructions string, connections map[string]([2]string), startNodes []string, endNodes []string) ([]int, []int) {
-	currentNodes := startNodes
+func getPeriod(instructions string, connections *map[string]([2]string), startNode string, endNodes []string, ch chan [2]int) {
+	currentNode := startNode
 
-	leading := make([]int, len(currentNodes))
-	periods := make([]int, len(currentNodes))
+	leading, period := 0, 0
 
-	for i := 0; slices.Contains(leading, 0) || slices.Contains(periods, 0); i++ {
-		for nodeIdx, currentNode := range currentNodes {
-			if periods[nodeIdx] != 0 {
-				// If we already have the period, skip
-				continue
-			}
+	for i := 0; period == 0; i++ {
+		connection, ok := (*connections)[currentNode]
 
-			connection, ok := connections[currentNode]
-
-			if !ok {
-				panic("No connection found")
-			}
-
-			instruction := instructions[i%len(instructions)]
-			idx := getInstructionIndex(instruction)
-
-			// Travel node
-			// We can change it in place because length of array doesn't change
-			currentNodes[nodeIdx] = connection[idx]
-
-			// If we have an end node now, fill in the bookkeeping
-			if !slices.Contains(endNodes, currentNodes[nodeIdx]) {
-				continue
-			}
-
-			if leading[nodeIdx] == 0 {
-				// 0 based indexing. Actual number of steps should be + 1
-				leading[nodeIdx] = i + 1
-				continue
-			}
-
-			// Subtract the leading period
-			periods[nodeIdx] = i + 1 - leading[nodeIdx]
+		if !ok {
+			panic("No connection found")
 		}
+
+		instruction := instructions[i%len(instructions)]
+		idx := getInstructionIndex(instruction)
+
+		currentNode = connection[idx]
+
+		if !slices.Contains(endNodes, currentNode) {
+			continue
+		}
+
+		if leading == 0 {
+			leading = i + 1
+			continue
+		}
+
+		period = i + 1 - leading
+	}
+
+	ch <- [2]int{leading, period}
+}
+
+func getPeriods(instructions string, connections map[string]([2]string), startNodes []string, endNodes []string) ([]int, []int) {
+	ch := make(chan [2]int)
+	for _, node := range startNodes {
+		go getPeriod(instructions, &connections, node, endNodes, ch)
+	}
+
+	leading := make([]int, len(startNodes))
+	periods := make([]int, len(startNodes))
+	for i := range startNodes {
+		p := <-ch
+
+		leading[i] = p[0]
+		periods[i] = p[1]
 	}
 
 	return leading, periods
@@ -100,7 +105,7 @@ func easy() {
 }
 
 func hard() {
-	instructions, connections := parseInput("example-input3.txt")
+	instructions, connections := parseInput("input.txt")
 
 	startNodes := make([]string, 0)
 	endNodes := make([]string, 0)
