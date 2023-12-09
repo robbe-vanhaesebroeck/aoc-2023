@@ -34,7 +34,7 @@ func parseInput(fileName string) *[]*[]int {
 	return &readings
 }
 
-func predictNextValue(reading *[]int) int {
+func extraPolateValue(reading *[]int, reverse bool) int {
 	readingVal := *reading
 	differences := make([]int, len(readingVal)-1)
 
@@ -44,11 +44,20 @@ func predictNextValue(reading *[]int) int {
 
 	// If we only have zeroes, extrapolate
 	if !slices.ContainsFunc(differences, func(el int) bool { return el != 0 }) {
+
+		if reverse {
+			return readingVal[0] - differences[0]
+		}
+
 		return readingVal[len(readingVal)-1] + differences[len(differences)-1]
 	}
 
 	// Otherwise recursively find the next value on these differences
-	nextValue := predictNextValue(&differences)
+	nextValue := extraPolateValue(&differences, reverse)
+
+	if reverse {
+		return readingVal[0] - nextValue
+	}
 
 	return readingVal[len(readingVal)-1] + nextValue
 }
@@ -58,7 +67,18 @@ func easy() {
 
 	sum := 0
 	for _, r := range *readings {
-		sum += predictNextValue(r)
+		sum += extraPolateValue(r, false)
+	}
+
+	fmt.Printf("The total sum is %d\n", sum)
+}
+
+func hard() {
+	readings := parseInput("input.txt")
+
+	sum := 0
+	for _, r := range *readings {
+		sum += extraPolateValue(r, true)
 	}
 
 	fmt.Printf("The total sum is %d\n", sum)
@@ -67,4 +87,7 @@ func easy() {
 func main() {
 	fmt.Println("Part one")
 	easy()
+
+	fmt.Println("Part two")
+	hard()
 }
