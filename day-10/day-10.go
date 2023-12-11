@@ -128,6 +128,8 @@ func findInsideTiles(graph *[]string, path []Coord) []Coord {
 				insideTiles = append(insideTiles, Coord{x: col, y: row})
 			} else if inPath && strings.ContainsRune("|LJ", ch) {
 				// Only consider north-facing pipes because they intersect the 'ray'
+				// The choice for north or south doesn't matter, both work.
+				// You can try this by replacing it with "|F7"
 				isInside = !isInside
 			}
 		}
