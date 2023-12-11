@@ -9,7 +9,9 @@ import (
 	"strings"
 )
 
-type Coord [2]int
+type Coord struct {
+	x, y int
+}
 
 func parseInput(fileName string) *[]string {
 	data, err := os.ReadFile(fileName)
@@ -25,7 +27,7 @@ func getStartNode(graph *[]string) Coord {
 		j := strings.Index(line, "S")
 
 		if j != -1 {
-			return Coord{i, j}
+			return Coord{x: j, y: i}
 		}
 	}
 
@@ -34,39 +36,39 @@ func getStartNode(graph *[]string) Coord {
 
 func step(graph *[]string, prevNode, currentNode Coord) Coord {
 	// Takes the previous node and current node to determine the next node
-	currentSymbol := (*graph)[currentNode[0]][currentNode[1]]
+	currentSymbol := (*graph)[currentNode.y][currentNode.x]
 
-	verticalDiff := currentNode[0] - prevNode[0]
-	horizontalDiff := currentNode[1] - prevNode[1]
+	verticalDiff := currentNode.y - prevNode.y
+	horizontalDiff := currentNode.x - prevNode.x
 
 	// north to south
 	if currentSymbol == byte('|') && verticalDiff != 0 {
-		return Coord{currentNode[0] + verticalDiff, currentNode[1]}
+		return Coord{currentNode.x, currentNode.y + verticalDiff}
 	}
 
 	// east to west
 	if currentSymbol == byte('-') && horizontalDiff != 0 {
-		return Coord{currentNode[0], currentNode[1] + horizontalDiff}
+		return Coord{currentNode.x + horizontalDiff, currentNode.y}
 	}
 
 	// north to east
 	if currentSymbol == byte('L') {
-		return Coord{currentNode[0] - int(math.Abs(float64(horizontalDiff))), currentNode[1] + int(math.Abs(float64(verticalDiff)))}
+		return Coord{currentNode.x + int(math.Abs(float64(verticalDiff))), currentNode.y - int(math.Abs(float64(horizontalDiff)))}
 	}
 
 	// north to west
 	if currentSymbol == byte('J') {
-		return Coord{currentNode[0] - int(math.Abs(float64(horizontalDiff))), currentNode[1] - int(math.Abs(float64(verticalDiff)))}
+		return Coord{currentNode.x - int(math.Abs(float64(verticalDiff))), currentNode.y - int(math.Abs(float64(horizontalDiff)))}
 	}
 
 	// south to west
 	if currentSymbol == byte('7') {
-		return Coord{currentNode[0] + int(math.Abs(float64(horizontalDiff))), currentNode[1] - int(math.Abs(float64(verticalDiff)))}
+		return Coord{currentNode.x - int(math.Abs(float64(verticalDiff))), currentNode.y + int(math.Abs(float64(horizontalDiff)))}
 	}
 
 	// south to east
 	if currentSymbol == byte('F') {
-		return Coord{currentNode[0] + int(math.Abs(float64(horizontalDiff))), currentNode[1] + int(math.Abs(float64(verticalDiff)))}
+		return Coord{currentNode.x + int(math.Abs(float64(verticalDiff))), currentNode.y + int(math.Abs(float64(horizontalDiff)))}
 	}
 
 	return currentNode
@@ -79,12 +81,12 @@ func findCycles(graph *[]string, startNode Coord) [][]Coord {
 
 	for _, diff := range diffs {
 		currentNode := startNode
-		nextNode := Coord{startNode[0] + diff[0], startNode[1] + diff[1]}
+		nextNode := Coord{startNode.x + diff[0], startNode.y + diff[1]}
 
 		// Node is not a valid node to traverse
-		if nextNode[0] < 0 || nextNode[0] >= len(*graph) ||
-			nextNode[1] < 0 || nextNode[1] >= len((*graph)[0]) ||
-			(*graph)[nextNode[0]][nextNode[1]] == byte('.') {
+		if nextNode.y < 0 || nextNode.y >= len(*graph) ||
+			nextNode.x < 0 || nextNode.x >= len((*graph)[0]) ||
+			(*graph)[nextNode.y][nextNode.x] == byte('.') {
 			continue
 		}
 
@@ -92,7 +94,7 @@ func findCycles(graph *[]string, startNode Coord) [][]Coord {
 		nodes[0] = startNode
 		nodes[1] = nextNode
 
-		for nextNode[0] != startNode[0] || nextNode[1] != startNode[1] {
+		for nextNode.y != startNode.y || nextNode.x != startNode.x {
 			nodes = append(nodes, nextNode)
 
 			newNode := step(graph, currentNode, nextNode)
@@ -112,6 +114,28 @@ func findCycles(graph *[]string, startNode Coord) [][]Coord {
 	return cycles
 }
 
+func findInsideTiles(graph *[]string, path []Coord) []Coord {
+	// This is using the even odd rule
+	// For each dot, check horizontally and vertically how many times the path intersects
+
+	insideTiles := make([]Coord, 0)
+
+	for row, line := range *graph {
+		isInside := false
+		for col, ch := range line {
+			inPath := slices.Contains(path, Coord{x: col, y: row})
+			if !inPath && isInside {
+				insideTiles = append(insideTiles, Coord{x: col, y: row})
+			} else if inPath && strings.ContainsRune("|LJ", ch) {
+				// Only consider north-facing pipes because they intersect the 'ray'
+				isInside = !isInside
+			}
+		}
+	}
+
+	return insideTiles
+}
+
 func easy() {
 	graph := parseInput("input.txt")
 
@@ -126,7 +150,23 @@ func easy() {
 	fmt.Printf("The maximal distance from start is %d\n", maxDistanceFromStart)
 }
 
+func hard() {
+	graph := parseInput("input.txt")
+
+	startNode := getStartNode(graph)
+
+	paths := findCycles(graph, startNode)
+	maxPath := slices.MaxFunc(paths, func(p1, p2 []Coord) int { return len(p1) - len(p2) })
+
+	insideTiles := findInsideTiles(graph, maxPath)
+
+	fmt.Printf("There are %d inside tiles\n", len(insideTiles))
+}
+
 func main() {
 	fmt.Println("Part one")
 	easy()
+
+	fmt.Println("Part two")
+	hard()
 }
