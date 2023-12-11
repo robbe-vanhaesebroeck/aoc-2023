@@ -136,6 +136,35 @@ func findInsideTiles(graph *[]string, path []Coord) []Coord {
 	return insideTiles
 }
 
+func replaceStartSymbol(graph *[]string, maxPath []Coord) {
+	startNode := maxPath[0]
+	nextNode := maxPath[1]
+	lastNode := maxPath[len(maxPath)-1]
+
+	horDiff := lastNode.x - nextNode.x
+	vertDiff := lastNode.y - nextNode.y
+
+	if horDiff == 0 && int(math.Abs(float64(vertDiff))) == 2 {
+		fmt.Println("|")
+		(*graph)[startNode.y] = strings.Replace((*graph)[startNode.y], "S", "|", 1)
+	} else if int(math.Abs(float64(horDiff))) == 2 && vertDiff == 0 {
+		fmt.Println("-")
+		(*graph)[startNode.y] = strings.Replace((*graph)[startNode.y], "S", "-", 1)
+	} else if (horDiff == 1 && vertDiff == 1) || (horDiff == -1 && vertDiff == -1) {
+		if nextNode.y == startNode.y {
+			(*graph)[startNode.y] = strings.Replace((*graph)[startNode.y], "S", "L", 1)
+		} else {
+			(*graph)[startNode.y] = strings.Replace((*graph)[startNode.y], "S", "7", 1)
+		}
+	} else {
+		if nextNode.y == startNode.y {
+			(*graph)[startNode.y] = strings.Replace((*graph)[startNode.y], "S", "F", 1)
+		} else {
+			(*graph)[startNode.y] = strings.Replace((*graph)[startNode.y], "S", "J", 1)
+		}
+	}
+}
+
 func easy() {
 	graph := parseInput("input.txt")
 
@@ -157,6 +186,10 @@ func hard() {
 
 	paths := findCycles(graph, startNode)
 	maxPath := slices.MaxFunc(paths, func(p1, p2 []Coord) int { return len(p1) - len(p2) })
+
+	// Replace the start node with the proper symbol
+
+	replaceStartSymbol(graph, maxPath)
 
 	insideTiles := findInsideTiles(graph, maxPath)
 
