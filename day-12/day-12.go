@@ -137,6 +137,22 @@ func findPossibleConfigs(config SpringConfig) int {
 	return totalConfigs
 }
 
+const numRepeats = 5
+
+func expandConfig(config SpringConfig) SpringConfig {
+
+	expandedConfig := strings.Repeat(config.config+"?", numRepeats)
+	expandedConfig = expandedConfig[:len(expandedConfig)-1]
+
+	expandedGroups := make([]int, 0, len(config.groups)*numRepeats)
+
+	for i := 0; i < numRepeats; i++ {
+		expandedGroups = append(expandedGroups, config.groups...)
+	}
+
+	return SpringConfig{expandedConfig, expandedGroups}
+}
+
 func easy() {
 	configs := parseInput("input.txt")
 
@@ -148,7 +164,27 @@ func easy() {
 	fmt.Printf("The total number of configs is %d\n", sum)
 }
 
+func hard() {
+	configs := parseInput("input.txt")
+
+	expandedConfigs := make([]SpringConfig, len(configs))
+
+	for i, c := range configs {
+		expandedConfigs[i] = expandConfig(c)
+	}
+
+	sum := 0
+	for _, config := range expandedConfigs {
+		sum += findPossibleConfigs(config)
+	}
+
+	fmt.Printf("The total number of configs is %d\n", sum)
+}
+
 func main() {
 	fmt.Println("Part one")
 	easy()
+
+	fmt.Println("Part two")
+	hard()
 }
