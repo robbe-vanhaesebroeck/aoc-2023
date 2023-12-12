@@ -34,35 +34,52 @@ func parseInput(fileName string) []SpringConfig {
 	return configs
 }
 
+func getKey(config SpringConfig) string {
+	return fmt.Sprint(config)
+}
+
+var configCache = make(map[string]int)
+
 func findPossibleConfigs(config SpringConfig) int {
+	if cachedAnswer, isCached := configCache[getKey(config)]; isCached {
+		return cachedAnswer
+	}
+
 	totalConfigs := 0
 
 	// Exit conditions
 	if len(config.config) == 0 && len(config.groups) == 0 {
+		configCache[getKey(config)] = 1
 		return 1
 	} else if len(config.config) == 0 {
+		configCache[getKey(config)] = 0
 		return 0
 	}
 
 	if len(config.config) == 1 {
 		if (config.config[0] == byte('.') || config.config[0] == byte('?')) &&
 			len(config.groups) == 0 {
+			configCache[getKey(config)] = 1
 			return 1
 		}
 
 		if (config.config[0] == byte('#') || config.config[0] == byte('?')) &&
 			len(config.groups) == 1 && config.groups[0] == 1 {
+			configCache[getKey(config)] = 1
 			return 1
 		}
 
+		configCache[getKey(config)] = 0
 		return 0
 	}
 
 	if len(config.groups) == 0 {
 		if strings.ContainsRune(config.config, rune('#')) {
+			configCache[getKey(config)] = 0
 			return 0
 		}
 
+		configCache[getKey(config)] = 1
 		return 1
 	}
 
@@ -87,14 +104,18 @@ func findPossibleConfigs(config SpringConfig) int {
 
 			if len(config.config) < groupLength {
 				// Not a valid config
+				configCache[getKey(config)] = 0
 				return 0
 			} else if strings.ContainsRune(config.config[:groupLength], rune('.')) {
 				// No dots are allowed
+				configCache[getKey(config)] = 0
 				return 0
 			} else if len(config.config) == groupLength && len(config.groups) == 1 {
+				configCache[getKey(config)] = 1
 				return 1
 			} else if len(config.config) == groupLength {
 				// Not all groups are used
+				configCache[getKey(config)] = 0
 				return 0
 			}
 
@@ -112,6 +133,7 @@ func findPossibleConfigs(config SpringConfig) int {
 		}
 	}
 
+	configCache[getKey(config)] = totalConfigs
 	return totalConfigs
 }
 
