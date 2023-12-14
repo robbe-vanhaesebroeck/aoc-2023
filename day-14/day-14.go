@@ -32,6 +32,7 @@ func easy() {
 				num_round++
 			} else if grid[row][col] == byte('#') {
 				// Reset the count as if this is the top
+				// Add 1 because we can't count the current row for the next round boulders
 				cube_row = row + 1
 				num_round = 0
 			}
