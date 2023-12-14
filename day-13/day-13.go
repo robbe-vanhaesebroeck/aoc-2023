@@ -1,11 +1,11 @@
 package main
 
 import (
+	"aoc-2023/common"
 	"aoc-2023/errorHandling"
 	"bufio"
 	"fmt"
 	"os"
-	"strings"
 )
 
 type Grid []string
@@ -76,25 +76,10 @@ func findRowSymmetry(grid Grid, smudges int) int {
 	return 0
 }
 
-func transpose(grid Grid) Grid {
-	transposed := make(Grid, len(grid[0]))
-
-	for j := 0; j < len(grid[0]); j++ {
-		var transposedStrBuilder strings.Builder
-		for i := 0; i < len(grid); i++ {
-			transposedStrBuilder.WriteByte(grid[i][j])
-		}
-
-		transposed[j] = transposedStrBuilder.String()
-	}
-
-	return transposed
-}
-
 func findColSymmetry(grid Grid, smudges int) int {
 	// Finds the number of columns before the symmetry line
 	// Returns 0 if there is none
-	return findRowSymmetry(transpose(grid), smudges)
+	return findRowSymmetry(common.Transpose(grid), smudges)
 }
 
 func easy() {
