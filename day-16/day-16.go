@@ -59,10 +59,6 @@ func nextSteps(grid *Grid, prevNode Coord, currentNode Coord) []Coord {
 }
 
 func tracePath(grid *Grid, pathMap *map[Coord]([]Coord), prevNode Coord, currentNode Coord) {
-	if _, ok := (*pathMap)[prevNode]; !ok {
-		(*pathMap)[prevNode] = []Coord{currentNode}
-	}
-
 	// Iterate as long as our current node is within bounds
 	for currentNode.x < len((*grid)[0]) && currentNode.x >= 0 &&
 		currentNode.y < len(*grid) && currentNode.y >= 0 {
@@ -100,12 +96,48 @@ func easy() {
 	grid := parseInput("input.txt")
 
 	pathMap := make(map[Coord]([]Coord))
-	tracePath(&grid, &pathMap, Coord{0, 0}, Coord{1, 0})
+	tracePath(&grid, &pathMap, Coord{-1, 0}, Coord{0, 0})
 
-	fmt.Printf("The total number of keys is %d\n", len(pathMap))
+	fmt.Printf("The total number of tiles is %d\n", len(pathMap))
+}
+
+func hard() {
+	grid := parseInput("input.txt")
+
+	var maxTiles int
+
+	maxX := len(grid[0])
+	maxY := len(grid)
+
+	startCoords := make([][]Coord, 0)
+
+	for x := 0; x < maxX; x++ {
+		startCoords = append(startCoords, []Coord{{x, 0}, {x, -1}})
+		startCoords = append(startCoords, []Coord{{x, maxY - 1}, {x, maxY}})
+	}
+
+	for y := 0; y < maxY; y++ {
+		startCoords = append(startCoords, []Coord{{0, y}, {-1, y}})
+		startCoords = append(startCoords, []Coord{{maxX - 1, y}, {maxX, y}})
+	}
+
+	for _, coords := range startCoords {
+		pathMap := make(map[Coord]([]Coord))
+		tracePath(&grid, &pathMap, coords[1], coords[0])
+		numTiles := len(pathMap)
+
+		if maxTiles < numTiles {
+			maxTiles = numTiles
+		}
+	}
+
+	fmt.Printf("The maximum number of tiles is %d\n", maxTiles)
 }
 
 func main() {
 	fmt.Println("Part one")
 	easy()
+
+	fmt.Println("Part two")
+	hard()
 }
