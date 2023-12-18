@@ -28,8 +28,11 @@ const (
 	Right
 )
 
-var directions = []string{"U", "D", "L", "R"}
-var deltas = [][]int{{0, -1}, {0, 1}, {-1, 0}, {1, 0}}
+// var directions = []string{"U", "D", "L", "R"}
+// var deltas = [][]int{{0, -1}, {0, 1}, {-1, 0}, {1, 0}}
+
+var directions = []string{"R", "D", "L", "U"}
+var deltas = [][]int{{1, 0}, {0, 1}, {-1, 0}, {0, -1}}
 
 var digRegex = regexp.MustCompile(`(?P<direction>\w) (?P<length>\d+) \(#(?P<hex>.{6})\)`)
 
@@ -64,6 +67,18 @@ func parseInput(fileName string) []DigInstruction {
 	return digInstructions
 }
 
+func getHexInstruction(hex string) DigInstruction {
+	lenStr := hex[:5]
+	dirStr := hex[len(hex)-1]
+
+	dirIdx := int(dirStr - '0')
+
+	length, err := strconv.ParseInt(lenStr, 16, 64)
+	errorHandling.Check(err)
+
+	return DigInstruction{dirIdx, int(length), hex}
+}
+
 func getCoords(instructions []DigInstruction) []Coord {
 	coords := make([]Coord, 1)
 	coords[0] = Coord{0, 0}
@@ -92,9 +107,7 @@ func getArea(coords []Coord) float64 {
 	return float64(area) / 2
 }
 
-func easy() {
-	instructions := parseInput("input.txt")
-
+func getLavaVolume(instructions []DigInstruction) int {
 	coords := getCoords(instructions)
 	area := getArea(coords)
 
@@ -107,10 +120,35 @@ func easy() {
 	// Using pick's theorem
 	innerPoints := int(math.Ceil(area - float64(boundaryPoints)/2 + 1))
 
-	fmt.Println(innerPoints + boundaryPoints)
+	return innerPoints + boundaryPoints
+}
+
+func easy() {
+	instructions := parseInput("input.txt")
+
+	lavaVolume := getLavaVolume(instructions)
+
+	fmt.Printf("Total cubic meters of lava is %d\n", lavaVolume)
+}
+
+func hard() {
+	instructions := parseInput("input.txt")
+
+	hexInstructions := make([]DigInstruction, len(instructions))
+	for i, ins := range instructions {
+		hexInstructions[i] = getHexInstruction(ins.hex)
+	}
+
+	lavaVolume := getLavaVolume(hexInstructions)
+
+	fmt.Printf("Total cubic meters of lava is %d\n", lavaVolume)
+
 }
 
 func main() {
 	fmt.Println("Part one")
 	easy()
+
+	fmt.Println("Part two")
+	hard()
 }
