@@ -5,6 +5,7 @@ import (
 	"bufio"
 	"fmt"
 	"log"
+	"maps"
 	"os"
 	"regexp"
 	"strconv"
@@ -19,6 +20,8 @@ type Rule struct {
 }
 
 type Part map[rune]int
+
+type TupleRange map[rune]([2]int)
 
 var ruleRegex = regexp.MustCompile(`(?P<workflow>\w+)\{(?P<rules>.*)\}`)
 
@@ -146,6 +149,59 @@ func acceptPart(part Part, rulesMapPtr *map[string][]Rule, startRule string) boo
 	return currentName == "A"
 }
 
+func getValidRanges(rulesMapPtr *map[string]([]Rule), ruleName string, tuple TupleRange) []TupleRange {
+	// Early exit conditions
+	if ruleName == "R" {
+		// Reject the tuple
+		return []TupleRange{}
+	} else if ruleName == "A" {
+		// Accept the current tuple
+		return []TupleRange{tuple}
+	}
+
+	rulesMap := *rulesMapPtr
+
+	rules, ok := rulesMap[ruleName]
+
+	if !ok {
+		log.Fatalf("No rule with the name %s\n", ruleName)
+	}
+
+	tupleRanges := make([]TupleRange, 0)
+	tupleCopy := maps.Clone(tuple)
+
+	for _, rule := range rules {
+		if rule.target == -1 {
+			// Immediately go to next
+			tupleRanges = append(tupleRanges, getValidRanges(rulesMapPtr, rule.dest, tupleCopy)...)
+			// The rules after this one are unreachable
+			break
+		}
+
+		// If we do have a valid target, make a new tuple that meets the condition
+		meetsTuple := maps.Clone(tupleCopy)
+		currentRange := meetsTuple[rule.category]
+
+		if rule.smaller && currentRange[0] < rule.target {
+			// Make the max smaller
+			meetsTuple[rule.category] = [2]int{currentRange[0], rule.target - 1}
+			tupleRanges = append(tupleRanges, getValidRanges(rulesMapPtr, rule.dest, meetsTuple)...)
+
+			// Update the current tuple before going to the next
+			tupleCopy[rule.category] = [2]int{rule.target, currentRange[1]}
+		} else if !rule.smaller && currentRange[1] > rule.target {
+			// Make the min bigger
+			meetsTuple[rule.category] = [2]int{rule.target + 1, currentRange[1]}
+			tupleRanges = append(tupleRanges, getValidRanges(rulesMapPtr, rule.dest, meetsTuple)...)
+
+			// Update the current tuple before going to the next
+			tupleCopy[rule.category] = [2]int{currentRange[0], rule.target}
+		}
+	}
+
+	return tupleRanges
+}
+
 func easy() {
 	rulesMap, parts := parseInput("input.txt")
 
@@ -164,7 +220,37 @@ func easy() {
 	fmt.Printf("The final sum is %d\n", sum)
 }
 
+func hard() {
+	rulesMap, _ := parseInput("input.txt")
+
+	tuple := make(TupleRange)
+	tuple[rune('x')] = [2]int{1, 4000}
+	tuple[rune('m')] = [2]int{1, 4000}
+	tuple[rune('a')] = [2]int{1, 4000}
+	tuple[rune('s')] = [2]int{1, 4000}
+
+	startRule := "in"
+
+	validRanges := getValidRanges(&rulesMap, startRule, tuple)
+
+	numCombos := 0
+	for _, validRange := range validRanges {
+		tupleCombos := 1
+		for _, tuple := range validRange {
+			tupleNum := tuple[1] - tuple[0] + 1
+			tupleCombos *= tupleNum
+		}
+
+		numCombos += tupleCombos
+	}
+
+	fmt.Printf("The number of valid combinations is %d\n", numCombos)
+}
+
 func main() {
 	fmt.Println("Part one")
 	easy()
+
+	fmt.Println("Part two")
+	hard()
 }
