@@ -168,34 +168,33 @@ func getValidRanges(rulesMapPtr *map[string]([]Rule), ruleName string, tuple Tup
 	}
 
 	tupleRanges := make([]TupleRange, 0)
-	tupleCopy := maps.Clone(tuple)
 
 	for _, rule := range rules {
 		if rule.target == -1 {
 			// Immediately go to next
-			tupleRanges = append(tupleRanges, getValidRanges(rulesMapPtr, rule.dest, tupleCopy)...)
+			tupleRanges = append(tupleRanges, getValidRanges(rulesMapPtr, rule.dest, tuple)...)
 			// The rules after this one are unreachable
 			break
 		}
 
 		// If we do have a valid target, make a new tuple that meets the condition
-		meetsTuple := maps.Clone(tupleCopy)
+		meetsTuple := maps.Clone(tuple)
 		currentRange := meetsTuple[rule.category]
 
-		if rule.smaller && currentRange[0] < rule.target {
+		if rule.smaller && currentRange[1] > rule.target {
 			// Make the max smaller
 			meetsTuple[rule.category] = [2]int{currentRange[0], rule.target - 1}
 			tupleRanges = append(tupleRanges, getValidRanges(rulesMapPtr, rule.dest, meetsTuple)...)
 
 			// Update the current tuple before going to the next
-			tupleCopy[rule.category] = [2]int{rule.target, currentRange[1]}
-		} else if !rule.smaller && currentRange[1] > rule.target {
+			tuple[rule.category] = [2]int{rule.target, currentRange[1]}
+		} else if !rule.smaller && currentRange[0] < rule.target {
 			// Make the min bigger
 			meetsTuple[rule.category] = [2]int{rule.target + 1, currentRange[1]}
 			tupleRanges = append(tupleRanges, getValidRanges(rulesMapPtr, rule.dest, meetsTuple)...)
 
 			// Update the current tuple before going to the next
-			tupleCopy[rule.category] = [2]int{currentRange[0], rule.target}
+			tuple[rule.category] = [2]int{currentRange[0], rule.target}
 		}
 	}
 
